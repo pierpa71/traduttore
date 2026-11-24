@@ -1,0 +1,15 @@
+Traduttore installato ({{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}).
+
+{{- if .Values.ingress.enabled }}
+Apri:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+Per aprirlo in locale:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "traduttore.fullname" . }} 8080:{{ .Values.service.port }}
+  poi http://localhost:8080
+{{- end }}
+
+LLM predefinito: {{ .Values.config.llmProvider }} @ {{ .Values.config.llmBaseUrl }}
+(modificabile dall'interfaccia; l'indirizzo deve essere raggiungibile dal pod)

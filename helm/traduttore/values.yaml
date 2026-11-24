@@ -1,0 +1,118 @@
+# Immagine pubblicata su Docker Hub dal workflow GitHub Actions
+image:
+  repository: pierpa71/traduttore
+  # vuoto = usa appVersion del chart (1.1.0); "latest" = ultima build di main
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# I job di traduzione sono tenuti in memoria nel processo: con più repliche
+# il polling dello stato finirebbe su pod diversi. Lasciare 1.
+replicaCount: 1
+
+# Valori predefiniti mostrati nella pagina (si possono cambiare dall'interfaccia)
+config:
+  llmProvider: ollama            # ollama | openai
+  # Ollama nel cluster: http://ollama.<namespace>.svc.cluster.local:11434
+  # Ollama su un altro server: http://192.168.1.50:11434
+  # OpenAI-compatibile: https://api.openai.com/v1
+  llmBaseUrl: http://ollama.ollama.svc.cluster.local:11434
+  llmModel: ""
+  chunkChars: 2000
+  ollamaNumCtx: 8192
+  noThink: true
+  llmReadTimeout: 900
+  logLevel: INFO
+  concurrency: 1
+  maxUploadMb: 50
+
+# Variabili d'ambiente aggiuntive (lista di EnvVar)
+extraEnv: []
+
+# API key usata se il campo nella pagina è vuoto (resta sul server)
+apiKey:
+  # Valore in chiaro: il chart crea un Secret. Preferire existingSecret in produzione.
+  value: ""
+  # Nome di un Secret già esistente che contiene la chiave
+  existingSecret: ""
+  existingSecretKey: LLM_API_KEY
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# Spazio per i file temporanei della conversione documenti
+tmpVolume:
+  sizeLimit: 1Gi
+
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # Con ingress-nginx, per caricare file fino a maxUploadMb:
+    # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: traduttore.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: traduttore-tls
+  #    hosts:
+  #      - traduttore.example.com
+
+# I PDF grandi e la ricomposizione dei font usano parecchia memoria
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 2Gi
+
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

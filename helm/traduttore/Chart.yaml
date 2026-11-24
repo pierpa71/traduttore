@@ -1,0 +1,9 @@
+apiVersion: v2
+name: traduttore
+description: Traduttore di documenti (PDF, DOCX, ...) tramite LLM (Ollama o endpoint compatibile OpenAI)
+type: application
+version: 1.1.0
+appVersion: "1.1.0"
+home: https://github.com/pierpa71/traduttore
+sources:
+  - https://github.com/pierpa71/traduttore

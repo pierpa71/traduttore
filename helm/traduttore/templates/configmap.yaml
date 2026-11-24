@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "traduttore.fullname" . }}
+  labels:
+    {{- include "traduttore.labels" . | nindent 4 }}
+data:
+  LLM_PROVIDER: {{ .Values.config.llmProvider | quote }}
+  LLM_BASE_URL: {{ .Values.config.llmBaseUrl | quote }}
+  LLM_MODEL: {{ .Values.config.llmModel | quote }}
+  CHUNK_CHARS: {{ .Values.config.chunkChars | quote }}
+  OLLAMA_NUM_CTX: {{ .Values.config.ollamaNumCtx | quote }}
+  NO_THINK: {{ ternary "1" "0" .Values.config.noThink | quote }}
+  LLM_READ_TIMEOUT: {{ .Values.config.llmReadTimeout | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  CONCURRENCY: {{ .Values.config.concurrency | quote }}
+  MAX_UPLOAD_MB: {{ .Values.config.maxUploadMb | quote }}
+  # Nel cluster "localhost" non va girato verso host.docker.internal come in Docker
+  LOCALHOST_ALIAS: ""
+  # Con il filesystem in sola lettura le cache (fontconfig, ...) vanno in /tmp
+  HOME: /tmp
+  XDG_CACHE_HOME: /tmp/.cache
