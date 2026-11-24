@@ -1,0 +1,25 @@
+# Solo l'applicazione: si collega a un Ollama / endpoint OpenAI-compatibile già esistente,
+# scelto dall'interfaccia web. I valori qui sotto sono solo i predefiniti mostrati nella pagina.
+#   docker compose up -d --build      ->  http://localhost:8080
+services:
+  traduttore:
+    build: .
+    image: traduttore:latest
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    # permette di raggiungere servizi sull'host (es. Ollama su localhost:11434)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://localhost:11434}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      CHUNK_CHARS: ${CHUNK_CHARS:-2000}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
+      NO_THINK: ${NO_THINK:-1}
+      LLM_READ_TIMEOUT: ${LLM_READ_TIMEOUT:-900}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CONCURRENCY: ${CONCURRENCY:-1}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}

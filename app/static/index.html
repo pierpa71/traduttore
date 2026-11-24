@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traduttore documenti</title>
+<style>
+@font-face { font-family: "Archivo"; font-style: normal; font-display: swap; font-weight: 100 900; font-stretch: 62% 125%;
+  src: url(/static/fonts/archivo-latin-standard-normal.woff2) format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Archivo"; font-style: normal; font-display: swap; font-weight: 100 900; font-stretch: 62% 125%;
+  src: url(/static/fonts/archivo-latin-ext-standard-normal.woff2) format("woff2-variations");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+
+/* ------------------------------------------------------------------ token */
+:root {
+  --bg: #F4F5F7; --surface: #FFFFFF; --subtle: #F8F9FB; --hover: #F1F3F6;
+  --ink: #161B26; --ink-2: #4A5263; --ink-3: #848C9C; --line: #E3E6EB; --line-2: #D3D7DE;
+  --accent: #1F4FBF; --accent-hover: #1A43A3; --accent-soft: #EAF0FC; --btn: #1F4FBF; --btn-hover: #1A43A3; --btn-ok: #157A4E;
+  --src: #2F6FE4; --dst: #D9417F;
+  --ok: #157A4E; --ok-soft: #E7F5EE; --warn: #9A6400; --warn-soft: #FDF4E1; --err: #B42333; --err-soft: #FCECEE;
+  --focus: 0 0 0 3px rgba(31, 79, 191, .25);
+  --shadow: 0 1px 2px rgba(22,27,38,.04), 0 1px 3px rgba(22,27,38,.06);
+  --r: 8px; --r-lg: 10px;
+  --fs-xs: 12px; --fs-s: 13px; --fs: 14.5px; --fs-m: 16px; --fs-l: 18px;
+  --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23848C9C' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0E1117; --surface: #161A22; --subtle: #1B2029; --hover: #20262F; --ink: #E8EAEE; --ink-2: #AEB4C0; --ink-3: #7C8494;
+    --line: #262C36; --line-2: #333A46; --accent: #5B8BF0; --accent-hover: #7AA1F4; --accent-soft: #1C2A47; --src: #6E9BF2; --dst: #EE7AA8;
+    --ok: #4CC38A; --ok-soft: #14291F; --warn: #E2B45A; --warn-soft: #2B2412; --err: #F07483; --err-soft: #2E171B;
+    --focus: 0 0 0 3px rgba(91,139,240,.35); --shadow: none; --btn: #2F5FD0; --btn-hover: #3A6BDD; --btn-ok: #1B8457; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 var(--fs)/1.5 "Archivo", system-ui, sans-serif; font-feature-settings: "tnum" 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: none; box-shadow: var(--focus); }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ barra superiore */
+.topbar { position: sticky; top: 0; z-index: 5; height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { width: 28px; height: 28px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; flex: none; }
+.logo svg { width: 17px; height: 17px; stroke: #fff; }
+.brand b { font-weight: 650; font-size: var(--fs-m); white-space: nowrap; }
+.brand span { color: var(--ink-3); font-size: var(--fs-s); white-space: nowrap; padding-left: 10px; margin-left: 2px; border-left: 1px solid var(--line-2); }
+.top-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.status { display: flex; align-items: center; gap: 8px; min-width: 0; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--subtle); font-size: var(--fs-s); color: var(--ink-2); cursor: pointer; }
+.status:hover { background: var(--hover); }
+.status b { color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.status small { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: var(--fs-xs); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.dot.on { background: var(--ok); } .dot.off { background: var(--err); } .dot.busy { background: var(--warn); animation: pulse 1s infinite alternate; }
+@keyframes pulse { to { opacity: .35; } }
+.icon-btn { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; flex: none; }
+.icon-btn:hover { background: var(--hover); }
+.icon-btn svg { width: 17px; height: 17px; stroke: var(--ink-2); }
+
+/* ------------------------------------------------------------------ layout */
+.layout { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: minmax(340px, 420px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.layout > * { min-width: 0; }
+.panel-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); }
+.panel-card + .panel-card { margin-top: 16px; }
+.pc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.pc-head h2 { margin: 0; font-size: var(--fs-m); font-weight: 650; }
+.pc-head p { margin: 0; color: var(--ink-3); font-size: var(--fs-s); }
+.pc-body { padding: 18px; }
+.field + .field { margin-top: 18px; }
+.lbl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: var(--fs-s); font-weight: 600; color: var(--ink-2); }
+.lbl small { font-weight: 400; color: var(--ink-3); }
+.hint { margin-top: 6px; color: var(--ink-3); font-size: var(--fs-xs); line-height: 1.45; }
+
+select, input, textarea { width: 100%; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); transition: border-color .12s, box-shadow .12s; }
+select { appearance: none; -webkit-appearance: none; height: 38px; padding: 0 32px 0 11px; background-image: var(--chev); background-repeat: no-repeat;
+  background-position: right 12px center; cursor: pointer; text-overflow: ellipsis; }
+input { height: 38px; padding: 0 11px; }
+textarea { padding: 9px 11px; min-height: 92px; resize: vertical; line-height: 1.5; }
+select:hover, input:hover, textarea:hover { border-color: var(--ink-3); }
+select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
+
+/* lingue */
+.langs { display: grid; grid-template-columns: 1fr 34px 1fr; gap: 8px; align-items: end; }
+.lang .lbl i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+.lang.src .lbl i { background: var(--src); } .lang.dst .lbl i { background: var(--dst); }
+.lang .lbl span { display: flex; align-items: center; }
+.swap { width: 34px; height: 38px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); cursor: pointer; display: grid; place-items: center; }
+.swap:hover:not(:disabled) { background: var(--hover); }
+.swap:disabled { opacity: .45; cursor: not-allowed; }
+.swap svg { width: 16px; height: 16px; stroke: var(--ink-2); transition: transform .3s; }
+.swap.turn svg { transform: rotate(180deg); }
+#target_custom { margin-top: 8px; }
+
+/* documento */
+#drop { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px dashed var(--line-2); border-radius: var(--r); background: var(--subtle); cursor: pointer; transition: border-color .12s, background .12s; }
+#drop:hover { border-color: var(--ink-3); background: var(--hover); }
+#drop.over { border-color: var(--accent); background: var(--accent-soft); }
+#drop.has { border-style: solid; background: var(--surface); }
+.ficon { width: 36px; height: 44px; flex: none; position: relative; border-radius: 4px 10px 4px 4px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  display: grid; place-items: end center; padding-bottom: 6px; }
+.ficon b { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+.ftext { min-width: 0; flex: 1; }
+.ftext strong { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ftext span { display: block; color: var(--ink-3); font-size: var(--fs-s); }
+.fchange { font-size: var(--fs-s); color: var(--accent); font-weight: 600; flex: none; }
+
+/* scelte formato */
+.opts { display: grid; gap: 6px; }
+.opt { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--r); cursor: pointer; transition: border-color .12s, background .12s; }
+.opt:hover { background: var(--hover); }
+.opt input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.opt .radio { width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--line-2); background: var(--surface); }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:has(input:checked) .radio { border: 5px solid var(--accent); }
+.opt:has(input:focus-visible) { box-shadow: var(--focus); }
+.opt b { display: block; font-weight: 600; font-size: var(--fs-s); line-height: 1.35; }
+.opt small { display: block; color: var(--ink-2); font-size: var(--fs-xs); line-height: 1.4; margin-top: 1px; }
+
+details.disclose summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-s); font-weight: 600; color: var(--ink-2); }
+details.disclose summary::-webkit-details-marker { display: none; }
+details.disclose summary::after { content: ""; width: 10px; height: 6px; background: var(--chev) no-repeat center; transition: transform .2s; }
+details.disclose[open] summary::after { transform: rotate(180deg); }
+details.disclose > :not(summary) { margin-top: 10px; }
+
+.pc-foot { padding: 14px 18px; border-top: 1px solid var(--line); background: var(--subtle); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--r);
+  background: var(--surface); cursor: pointer; font-weight: 600; font-size: var(--fs-s); white-space: nowrap; text-decoration: none; color: var(--ink); }
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; stroke: currentColor; flex: none; }
+.btn.primary { background: var(--btn); border-color: var(--btn); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: var(--btn-hover); border-color: var(--btn-hover); }
+.btn.primary:disabled { background: var(--line-2); border-color: var(--line-2); color: var(--ink-3); opacity: 1; }
+.btn.block { width: 100%; height: 42px; font-size: var(--fs); }
+.btn.success { background: var(--btn-ok); border-color: var(--btn-ok); color: #fff; }
+.btn.success:hover { filter: brightness(1.08); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--ink-2); }
+.btn.quiet:hover:not(:disabled) { background: var(--hover); }
+
+/* ------------------------------------------------------------------ area di lavoro */
+.empty { padding: 48px 28px; text-align: center; color: var(--ink-2); }
+.empty svg { width: 40px; height: 40px; stroke: var(--ink-3); margin-bottom: 10px; }
+.empty h3 { margin: 0 0 6px; font-size: var(--fs-m); color: var(--ink); font-weight: 650; }
+.empty p { margin: 0 auto; max-width: 46ch; font-size: var(--fs-s); }
+.steps-help { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 26px auto 0; max-width: 620px; text-align: left; counter-reset: s; }
+.steps-help div { padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--subtle); font-size: var(--fs-s); }
+.steps-help div::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 20px; height: 20px; margin-bottom: 8px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; }
+.steps-help b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 2px; }
+
+.stepper { display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; margin: 0 0 20px; padding: 0; }
+.stepper li { position: relative; display: grid; justify-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-3); text-align: center; }
+.stepper li::before { content: ""; position: absolute; top: 11px; left: -50%; right: 50%; height: 2px; background: var(--line-2); z-index: 0; }
+.stepper li:first-child::before { display: none; }
+.stepper li i { position: relative; z-index: 1; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line-2); background: var(--surface);
+  display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; }
+.stepper li.done, .stepper li.now { color: var(--ink); }
+.stepper li.done i { background: var(--accent); border-color: var(--accent); color: #fff; }
+.stepper li.done::before, .stepper li.now::before { background: var(--accent); }
+.stepper li.now i { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.stepper li.now { font-weight: 600; }
+
+.progress-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.pct { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.meta { color: var(--ink-2); font-size: var(--fs-s); font-variant-numeric: tabular-nums; text-align: right; }
+.meter { height: 6px; border-radius: 3px; background: var(--hover); overflow: hidden; position: relative; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; transition: width .5s ease; width: 0; }
+.meter .sent { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.meter .done { background: var(--accent); }
+.meter.idle .sent { background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 35%, transparent), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: sweep 1.4s linear infinite; }
+@keyframes sweep { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+.notice { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 10px 12px; border-radius: var(--r); font-size: var(--fs-s); line-height: 1.45; }
+.notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+.notice.info { background: var(--subtle); border: 1px solid var(--line); color: var(--ink-2); }
+.notice.info svg { stroke: var(--ink-3); }
+.notice.warn { background: var(--warn-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.notice.warn svg { stroke: var(--warn); }
+.notice.err { background: var(--err-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--err) 30%, transparent); }
+.notice.err svg { stroke: var(--err); }
+.notice b { display: block; }
+
+.feed-head { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 8px; font-size: var(--fs-s); font-weight: 600; color: var(--ink-2); }
+.feed-head small { font-weight: 400; color: var(--ink-3); }
+.feed { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.feed li { display: grid; grid-template-columns: 1fr 1fr; font-size: var(--fs-s); line-height: 1.45; animation: rowin .35s ease; }
+.feed li + li { border-top: 1px solid var(--line); }
+.feed li div { padding: 9px 12px; min-width: 0; }
+.feed li .o { color: var(--ink-2); background: var(--subtle); border-right: 1px solid var(--line); }
+.feed-cols { display: grid; grid-template-columns: 1fr 1fr; font-size: var(--fs-xs); color: var(--ink-3); background: var(--subtle); border-bottom: 1px solid var(--line); }
+.feed-cols span { padding: 6px 12px; display: flex; align-items: center; gap: 6px; }
+.feed-cols span i { width: 7px; height: 7px; border-radius: 50%; }
+@keyframes rowin { from { opacity: 0; } }
+
+.result-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.result-file { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 220px; }
+.result-file .ficon { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.result-file .ficon b { color: var(--ok); }
+.result-file strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.result-file span { display: block; color: var(--ink-3); font-size: var(--fs-s); }
+.result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.viewer-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 22px 0 10px; }
+.viewer-bar h3 { margin: 0; font-size: var(--fs-s); font-weight: 600; color: var(--ink-2); }
+.seg { display: inline-grid; grid-auto-flow: column; padding: 2px; gap: 2px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--subtle); }
+.seg label, .seg button { position: relative; padding: 5px 10px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: var(--fs-s); font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.seg input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked), .seg button[aria-pressed=true] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(22,27,38,.12); }
+.seg label:has(input:focus-visible) { box-shadow: var(--focus); }
+.pager { display: flex; align-items: center; gap: 6px; font-size: var(--fs-s); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pager .btn { width: 30px; height: 30px; padding: 0; }
+.viewer { border: 1px solid var(--line); border-radius: var(--r); background: var(--hover); padding: 16px; max-height: min(78vh, 900px); overflow: auto; }
+.sbs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sbs figure { margin: 0; }
+.sbs figcaption { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: var(--fs-xs); color: var(--ink-2); font-weight: 600; }
+.sbs figcaption i { width: 7px; height: 7px; border-radius: 50%; }
+.page { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.04); }
+.wipe { position: relative; max-width: 620px; margin: 0 auto; overflow: hidden; user-select: none; touch-action: pan-y; cursor: ew-resize; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.wipe img { display: block; width: 100%; height: auto; background: #fff; }
+.wipe .top { position: absolute; inset: 0; clip-path: inset(0 0 0 var(--cut, 50%)); }
+.wipe .handle { position: absolute; top: 0; bottom: 0; left: var(--cut, 50%); }
+.wipe .handle::before { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: var(--accent); }
+.wipe .handle b { position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff;
+  display: grid; place-items: center; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+
+/* cronologia */
+.history { width: 100%; border-collapse: collapse; font-size: var(--fs-s); }
+.history th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: var(--fs-xs); padding: 8px 18px; border-bottom: 1px solid var(--line); background: var(--subtle); }
+.history td { padding: 10px 18px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.history tr:last-child td { border-bottom: 0; }
+.history td.file { font-weight: 600; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history td.when { color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.history td.act { text-align: right; }
+.history a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.history a:hover { text-decoration: underline; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); } .badge.err { background: var(--err-soft); color: var(--err); } .badge.run { background: var(--accent-soft); color: var(--accent); }
+
+/* ------------------------------------------------------------------ pannello impostazioni */
+.scrim { position: fixed; inset: 0; z-index: 10; background: rgba(14,17,23,.4); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.scrim.show { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 11; width: min(440px, 100vw); display: flex; flex-direction: column; background: var(--surface);
+  transform: translateX(102%); visibility: hidden; transition: transform .3s ease, visibility 0s .3s; }
+.drawer.show { transform: none; visibility: visible; transition: transform .3s ease; box-shadow: -12px 0 32px -12px rgba(14,17,23,.35); }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.drawer-head h2 { margin: 0; font-size: var(--fs-l); font-weight: 650; }
+.drawer-body { padding: 18px 20px 28px; overflow-y: auto; flex: 1; }
+.drawer-body .lead { margin: 0 0 18px; color: var(--ink-2); font-size: var(--fs-s); }
+.row { display: flex; gap: 6px; }
+.row > select { flex: 1; min-width: 0; }
+.seg.full { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.seg.full label { text-align: center; }
+.msg { margin-top: 8px; font-size: var(--fs-s); display: flex; align-items: center; gap: 6px; }
+.msg:empty { display: none; }
+.msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: var(--fs-s); cursor: pointer; }
+.check input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.check b { display: block; font-weight: 600; }
+.check span span { color: var(--ink-3); font-size: var(--fs-xs); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.sep { height: 1px; background: var(--line); margin: 20px 0; border: 0; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 16px; }
+  .steps-help { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .topbar { padding: 0 14px; }
+  .layout { padding: 12px; }
+  .pc-body { padding: 14px; } .pc-head, .pc-foot { padding: 12px 14px; }
+  .brand span, .status small { display: none; }
+  .status b { max-width: 34vw; }
+  .langs { grid-template-columns: 1fr; }
+  .swap { width: 100%; height: 30px; }
+  .swap svg { transform: rotate(90deg); } .swap.turn svg { transform: rotate(270deg); }
+  .feed li, .feed-cols { grid-template-columns: 1fr; }
+  .feed li .o { border-right: 0; border-bottom: 1px dashed var(--line); }
+  .feed-cols span:last-child { display: none; }
+  .sbs { grid-template-columns: 1fr; }
+  .history th:nth-child(2), .history td:nth-child(2), .history th:nth-child(3), .history td:nth-child(3) { display: none; }
+  .history { table-layout: fixed; } .history td.file { max-width: none; }
+  .history td, .history th { padding-left: 12px; padding-right: 12px; }
+  .meta { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9M8.5 3v2M6 5c.5 3 2.5 5.5 6 7M11 5c-.8 3.5-3.3 6.5-7 8M13 21l4.5-10L22 21M14.5 18h5"/></svg></div>
+    <b>Traduttore documenti</b><span>Word, PDF e testo con LLM locale</span>
+  </div>
+  <div class="top-actions">
+    <button class="status" id="openPanel" aria-haspopup="dialog" aria-controls="drawer" title="Modello di traduzione">
+      <span class="dot" id="dot"></span><b id="pillModel">Modello non configurato</b><small id="pillUrl"></small>
+    </button>
+    <button class="icon-btn" id="openPanel2" aria-label="Impostazioni del modello" title="Impostazioni del modello">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ======================= colonna sinistra: nuova traduzione -->
+  <aside>
+    <section class="panel-card" id="setup">
+      <div class="pc-head"><h2>Nuova traduzione</h2></div>
+      <div class="pc-body">
+        <div class="field">
+          <div class="langs">
+            <div class="lang src"><label class="lbl" for="source_lang"><span><i></i>Lingua di origine</span></label><select id="source_lang"></select></div>
+            <button class="swap" id="swap" title="Inverti le lingue" aria-label="Inverti le lingue">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>
+            </button>
+            <div class="lang dst"><label class="lbl" for="target_lang"><span><i></i>Lingua di destinazione</span></label><select id="target_lang"></select></div>
+          </div>
+          <input id="target_custom" placeholder="Lingua di destinazione, es. Català" hidden>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Documento <small>.docx, .pdf, .txt, .md</small></span>
+          <div id="drop" role="button" tabindex="0" aria-label="Scegli il documento da tradurre">
+            <div class="ficon" aria-hidden="true"><b id="docExt">FILE</b></div>
+            <div class="ftext"><strong id="dropTitle">Trascina qui il documento</strong><span id="dropSub">oppure fai clic per sceglierlo</span></div>
+            <span class="fchange" id="dropChange" hidden>Cambia</span>
+            <input type="file" id="file" accept=".txt,.md,.docx,.pdf" hidden>
+          </div>
+        </div>
+
+        <div class="field" id="fmtField" hidden>
+          <span class="lbl">Formato di uscita</span>
+          <div class="opts" id="formats"></div>
+        </div>
+
+        <div class="field">
+          <details class="disclose">
+            <summary>Glossario e istruzioni</summary>
+            <textarea id="glossary" aria-label="Glossario e istruzioni" placeholder="Termini da non tradurre, terminologia preferita, registro.&#10;Esempio: cluster resta cluster; usa il Lei."></textarea>
+          </details>
+        </div>
+      </div>
+      <div class="pc-foot">
+        <button class="btn primary block" id="go" disabled><span id="goText">Seleziona un documento</span></button>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ======================= colonna destra: lavoro e risultati -->
+  <main>
+    <section class="panel-card" id="work">
+      <div class="pc-head"><h2 id="workTitle">Area di lavoro</h2><p id="workSub"></p></div>
+
+      <div id="idle" class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+        <h3>Nessuna traduzione in corso</h3>
+        <p>Scegli le lingue e il documento nel pannello a sinistra. La formattazione dell'originale viene mantenuta.</p>
+        <div class="steps-help">
+          <div><b>Collega il modello</b>Ollama o un endpoint compatibile OpenAI, dal pulsante in alto a destra.</div>
+          <div><b>Carica il documento</b>Word, PDF o testo, e scegli il formato di uscita.</div>
+          <div><b>Scarica il risultato</b>Con anteprima pagina per pagina per i PDF.</div>
+        </div>
+      </div>
+
+      <div id="running" class="pc-body" hidden>
+        <ol class="stepper" id="stages">
+          <li data-s="0"><i>1</i>Caricamento</li>
+          <li data-s="1"><i>2</i>Traduzione</li>
+          <li data-s="2"><i>3</i>Ricomposizione</li>
+          <li data-s="3"><i>4</i>Completato</li>
+        </ol>
+        <div class="progress-row"><span class="pct" id="pct">0%</span><span class="meta"><span id="facts">In avvio</span><span id="clock" style="margin-left:12px;color:var(--ink-3)">0:00</span></span></div>
+        <div class="meter" id="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avanzamento"><i class="sent" id="mSent"></i><i class="done" id="mDone"></i></div>
+        <div class="notice info" id="phase" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span id="phaseText"></span></div>
+        <div style="margin-top:14px"><button class="btn" id="cancel">Annulla</button></div>
+        <div id="feedSec" hidden>
+          <div class="feed-head">Paragrafi tradotti di recente <small>aggiornamento in tempo reale</small></div>
+          <div class="feed-cols"><span><i style="background:var(--src)"></i>Originale</span><span><i style="background:var(--dst)"></i>Traduzione</span></div>
+          <ul class="feed" id="feed" style="border-top:0;border-radius:0 0 var(--r) var(--r)"></ul>
+        </div>
+      </div>
+
+      <div id="done" class="pc-body" hidden>
+        <div class="result-row">
+          <div class="result-file"><div class="ficon" aria-hidden="true"><b id="outExt">PDF</b></div><div><strong id="outName"></strong><span id="doneSub"></span></div></div>
+          <div class="result-actions">
+            <a class="btn success" id="dl" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14"/></svg>Scarica</a>
+            <button class="btn" id="again">Nuova traduzione</button>
+          </div>
+        </div>
+        <div class="notice warn" id="doneWarn" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg><span id="doneWarnText"></span></div>
+        <div id="compare" hidden>
+          <div class="viewer-bar">
+            <h3>Anteprima</h3>
+            <div class="seg" role="group" aria-label="Modalità di confronto">
+              <button type="button" id="modeSbs" aria-pressed="true">Affiancate</button>
+              <button type="button" id="modeWipe" aria-pressed="false">Sovrapposte</button>
+            </div>
+            <div class="pager"><button class="btn" id="prev" aria-label="Pagina precedente">‹</button><span id="pageNo">1 / 1</span><button class="btn" id="next" aria-label="Pagina successiva">›</button></div>
+          </div>
+          <div class="viewer">
+            <div class="sbs" id="sbs">
+              <figure><figcaption><i style="background:var(--src)"></i>Originale</figcaption><img class="page" id="sbsOrig" alt="Pagina originale"></figure>
+              <figure><figcaption><i style="background:var(--dst)"></i>Traduzione</figcaption><img class="page" id="sbsTr" alt="Pagina tradotta"></figure>
+            </div>
+            <div class="wipe" id="wipe" hidden aria-label="Trascina per confrontare originale e traduzione">
+              <img id="imgOrig" alt="Pagina originale"><img id="imgTr" class="top" alt="Pagina tradotta">
+              <div class="handle"><b aria-hidden="true">⇆</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="failed" class="pc-body" hidden>
+        <div class="notice err" style="margin-top:0"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><span><b>La traduzione non è stata completata</b><span id="errText"></span></span></div>
+        <div style="margin-top:14px"><button class="btn" id="retry">Chiudi</button></div>
+      </div>
+    </section>
+
+    <section class="panel-card" id="historyCard" hidden>
+      <div class="pc-head"><h2>Traduzioni di questa sessione</h2><p>disponibili per il download per un'ora</p></div>
+      <table class="history"><thead><tr><th>Documento</th><th>Lingue</th><th>Ora</th><th>Stato</th><th></th></tr></thead><tbody id="historyBody"></tbody></table>
+    </section>
+  </main>
+</div>
+
+<!-- ======================= impostazioni del modello -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+  <div class="drawer-head"><h2 id="drawerTitle">Modello di traduzione</h2><button class="icon-btn" id="closePanel" aria-label="Chiudi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="drawer-body">
+    <p class="lead">Il testo dei documenti viene inviato all'endpoint configurato qui: il tuo server Ollama o un servizio compatibile con le API OpenAI.</p>
+
+    <div class="field">
+      <label class="lbl" for="profiles">Configurazioni salvate</label>
+      <div class="row">
+        <select id="profiles"></select>
+        <button class="btn" id="saveProfile">Salva</button>
+        <button class="btn" id="delProfile">Elimina</button>
+      </div>
+    </div>
+    <hr class="sep">
+    <div class="field">
+      <span class="lbl">Tipo di endpoint</span>
+      <div class="seg full">
+        <label><input type="radio" name="provider" value="ollama"> Ollama</label>
+        <label><input type="radio" name="provider" value="openai"> Compatibile OpenAI</label>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl" for="base_url">Indirizzo</label>
+      <input id="base_url" placeholder="http://localhost:11434" autocomplete="off" spellcheck="false">
+      <div class="hint" id="urlHint"></div>
+    </div>
+    <div class="field">
+      <label class="lbl" for="api_key">Chiave API <small>se richiesta</small></label>
+      <input id="api_key" type="password" autocomplete="off" placeholder="sk-…">
+    </div>
+    <div class="field">
+      <button class="btn primary block" id="refresh">Verifica connessione</button>
+      <div class="msg" id="modelMsg"></div>
+    </div>
+    <div class="field">
+      <label class="lbl" for="modelSelect">Modello</label>
+      <select id="modelSelect"><option value="">Verifica la connessione per vedere i modelli</option></select>
+      <input id="model" placeholder="Nome del modello" style="display:none;margin-top:8px">
+    </div>
+    <hr class="sep">
+    <details class="disclose">
+      <summary>Opzioni avanzate</summary>
+      <label class="check"><input type="checkbox" id="no_think" checked><span><b>Disattiva il ragionamento</b><span>Per qwen3, deepseek-r1, gpt-oss: risponde subito invece di "pensare" a lungo. Solo Ollama.</span></span></label>
+      <div class="grid2" style="margin-top:16px">
+        <div><label class="lbl" for="num_ctx">Contesto Ollama</label><input id="num_ctx" type="number" step="1024" min="0" value="8192"></div>
+        <div><label class="lbl" for="temperature">Temperatura</label><input id="temperature" type="number" step="0.1" min="0" max="2" value="0.2"></div>
+        <div><label class="lbl" for="max_chars">Caratteri per richiesta</label><input id="max_chars" type="number" step="500" min="500" value="2000"></div>
+        <div><label class="lbl" for="concurrency">Richieste parallele</label><input id="concurrency" type="number" min="1" max="16" value="1"></div>
+      </div>
+      <p class="hint">Contesto 0 = default del modello (può troncare i blocchi). Blocchi più piccoli rendono più affidabili i modelli piccoli. Con Ollama locale lascia 1 richiesta parallela, o il valore di OLLAMA_NUM_PARALLEL.</p>
+    </details>
+  </div>
+</aside>
+
+<script>
+const $ = id => document.getElementById(id);
+const LANGS = ["Italiano","English","Français","Deutsch","Español","Português","Nederlands","Polski","Română",
+  "Ελληνικά","Русский","Українська","Türkçe","العربية","עברית","中文 (简体)","日本語","한국어","हिन्दी"];
+const PERSIST = ["base_url","model","source_lang","target_lang","target_custom","glossary","temperature","max_chars","concurrency","num_ctx"];
+const store = {
+  get(k) { try { return localStorage.getItem("tr_" + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("tr_" + k, v); } catch {} },
+};
+const session = {
+  get() { try { return JSON.parse(sessionStorage.getItem("tr_history") || "[]"); } catch { return []; } },
+  set(v) { try { sessionStorage.setItem("tr_history", JSON.stringify(v)); } catch {} },
+};
+const FORMATS = {
+  pdf:  [["same", "PDF con la stessa impaginazione", "Font, immagini, tabelle e rientri restano al loro posto"],
+         ["docx", "Documento Word modificabile", "Il PDF viene convertito in .docx con il layout, poi tradotto"],
+         ["txt", "Solo testo", "Il testo tradotto, senza formattazione"]],
+  docx: [["same", "Word con la stessa formattazione", "Cambia solo il testo: stili, link, immagini e tabelle restano"],
+         ["txt", "Solo testo", "Il testo tradotto, senza formattazione"]],
+  txt:  [["same", "Stesso formato", "Paragrafi e righe vuote restano invariati"],
+         ["docx", "Documento Word", "Un .docx con i paragrafi tradotti"]],
+};
+let file = null, jobId = null, poll = null, connected = false, lastSeq = 0, page = 0, pages = 0, busy = false, current = null;
+
+const provider = () => document.querySelector('input[name=provider]:checked').value;
+const ext = () => file ? file.name.split(".").pop().toLowerCase().replace("md", "txt") : null;
+const mmss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtSize = n => n >= 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+const target = () => $("target_lang").value === "__custom" ? $("target_custom").value.trim() : $("target_lang").value;
+
+/* ---------- lingue ---------- */
+function fillLangs() {
+  $("source_lang").innerHTML = `<option value="auto">Rilevamento automatico</option>` + LANGS.map(l => `<option>${l}</option>`).join("");
+  $("target_lang").innerHTML = LANGS.map(l => `<option>${l}</option>`).join("") + `<option value="__custom">Altra lingua…</option>`;
+  $("source_lang").value = "Italiano"; $("target_lang").value = "English";
+}
+function langUi() {
+  $("target_custom").hidden = $("target_lang").value !== "__custom";
+  $("swap").disabled = $("source_lang").value === "auto" || $("target_lang").value === "__custom";
+}
+$("swap").onclick = () => {
+  const s = $("source_lang").value; $("source_lang").value = $("target_lang").value; $("target_lang").value = s;
+  $("swap").classList.toggle("turn"); saveForm(); langUi();
+};
+
+/* ---------- formato ---------- */
+function renderFormats() {
+  const k = ext() || "pdf", cur = store.get("fmt_" + k) || "same";
+  $("formats").innerHTML = FORMATS[k].map(([v, b, s]) =>
+    `<label class="opt"><input type="radio" name="fmt" value="${v}" ${v === cur ? "checked" : ""}><span class="radio"></span><span><b>${b}</b><small>${s}</small></span></label>`).join("");
+  $("fmtField").hidden = !file;
+  document.querySelectorAll("input[name=fmt]").forEach(r => r.onchange = () => store.set("fmt_" + k, r.value));
+}
+const outFormat = () => (document.querySelector("input[name=fmt]:checked") || {}).value || "same";
+
+/* ---------- documento ---------- */
+function setFile(f) {
+  if (!f) return;
+  const e = f.name.split(".").pop().toLowerCase();
+  if (!["pdf", "docx", "txt", "md"].includes(e)) {
+    $("dropTitle").textContent = "Formato non supportato";
+    $("dropSub").textContent = e === "doc" ? "Salva il file come .docx da Word e riprova" : "Usa un file .docx, .pdf, .txt o .md";
+    return;
+  }
+  file = f;
+  $("drop").classList.add("has"); $("dropChange").hidden = false;
+  $("docExt").textContent = e.toUpperCase();
+  $("dropTitle").textContent = f.name; $("dropSub").textContent = fmtSize(f.size);
+  renderFormats(); goState();
+}
+function goState() {
+  const ok = file && !busy;
+  $("go").disabled = !ok;
+  $("goText").textContent = busy ? "Traduzione in corso…" : !file ? "Seleziona un documento"
+    : !connected ? "Configura il modello" : !$("model").value.trim() ? "Seleziona un modello" : "Traduci documento";
+}
+const drop = $("drop");
+drop.onclick = () => $("file").click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+$("file").onchange = e => setFile(e.target.files[0]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); setFile(e.dataTransfer.files[0]); };
+$("go").onclick = () => {
+  if (!file || busy) return;
+  if (!connected || !$("model").value.trim()) { openPanel(); return; }
+  start();
+};
+
+/* ---------- impostazioni ---------- */
+function openPanel() { $("drawer").classList.add("show"); $("scrim").classList.add("show"); setTimeout(() => $("base_url").focus(), 250); }
+function closePanel() { $("drawer").classList.remove("show"); $("scrim").classList.remove("show"); }
+$("openPanel").onclick = openPanel; $("openPanel2").onclick = openPanel; $("closePanel").onclick = closePanel; $("scrim").onclick = closePanel;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("drawer").classList.contains("show")) closePanel(); });
+
+function updatePill(state) {
+  $("dot").className = "dot " + (state || "");
+  const m = $("model").value.trim();
+  $("pillModel").textContent = state === "busy" ? "Verifica in corso" : connected ? (m || "Seleziona un modello") : "Modello non collegato";
+  $("pillUrl").textContent = $("base_url").value.replace(/^https?:\/\//, "");
+}
+function updateHints() {
+  $("urlHint").textContent = provider() === "ollama"
+    ? "Esempio: http://localhost:11434 (stessa macchina) oppure http://192.168.1.50:11434"
+    : "Esempio: https://api.openai.com/v1, http://server:8000/v1 (vLLM), http://server:1234/v1 (LM Studio)";
+}
+function setModels(list, keep) {
+  const sel = $("modelSelect");
+  sel.innerHTML = (list.length ? "" : `<option value="">Nessun modello disponibile</option>`) +
+    list.map(m => `<option>${esc(m)}</option>`).join("") + `<option value="__other">Altro: inserisci il nome</option>`;
+  const want = keep || $("model").value;
+  if (want && list.includes(want)) sel.value = want;
+  else if (want) { sel.value = "__other"; $("model").value = want; }
+  else if (list.length) sel.value = list[0];
+  onModelSelect();
+}
+function onModelSelect() {
+  const v = $("modelSelect").value, other = v === "__other";
+  $("model").style.display = other ? "block" : "none";
+  if (!other) $("model").value = v;
+  saveCurrent(); updatePill(connected ? "on" : "off"); goState();
+}
+function saveCurrent() {
+  store.set("provider", provider()); store.set("base_url", $("base_url").value.trim());
+  if ($("model").value !== "__other") store.set("model", $("model").value.trim());
+}
+async function refreshModels(keep) {
+  $("modelMsg").textContent = "Connessione in corso…"; $("modelMsg").className = "msg";
+  connected = false; updatePill("busy"); goState();
+  try {
+    const r = await fetch("/api/models", { method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ provider: provider(), base_url: $("base_url").value.trim(), api_key: $("api_key").value }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || j.detail || r.statusText);
+    connected = true;
+    setModels(j.models, typeof keep === "string" ? keep : undefined);
+    $("modelMsg").textContent = `Connessione riuscita: ${j.models.length} ${j.models.length === 1 ? "modello disponibile" : "modelli disponibili"}.`;
+    $("modelMsg").className = "msg ok";
+  } catch (e) {
+    $("modelMsg").textContent = e.message; $("modelMsg").className = "msg err";
+    setModels([], typeof keep === "string" ? keep : undefined);
+  }
+  updatePill(connected ? "on" : "off"); goState();
+}
+$("refresh").onclick = () => refreshModels();
+$("modelSelect").onchange = onModelSelect;
+$("model").addEventListener("input", () => { saveCurrent(); updatePill(connected ? "on" : "off"); goState(); });
+["base_url", "api_key"].forEach(id => $(id).addEventListener("input", () => {
+  connected = false; updatePill(); goState();
+  if ($("profiles").value !== "") { $("profiles").value = ""; store.set("profile", ""); $("delProfile").disabled = true; }
+  saveCurrent();
+}));
+document.querySelectorAll("input[name=provider]").forEach(r => r.addEventListener("change", () => {
+  $("base_url").value = provider() === "ollama" ? "http://localhost:11434" : "https://api.openai.com/v1";
+  $("model").value = ""; $("profiles").value = ""; store.set("profile", ""); $("delProfile").disabled = true;
+  connected = false; setModels([]); updateHints(); updatePill(); saveCurrent();
+}));
+
+const getProfiles = () => { try { return JSON.parse(store.get("profiles") || "[]"); } catch { return []; } };
+const putProfiles = p => store.set("profiles", JSON.stringify(p));
+function renderProfiles(selected) {
+  const p = getProfiles();
+  $("profiles").innerHTML = `<option value="">Configurazione corrente</option>` + p.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join("");
+  $("profiles").value = selected ?? "";
+  $("delProfile").disabled = $("profiles").value === "";
+}
+function applyProfile() {
+  const i = $("profiles").value; $("delProfile").disabled = i === "";
+  if (i === "") return;
+  const x = getProfiles()[+i];
+  document.querySelector(`input[name=provider][value=${x.provider}]`).checked = true;
+  $("base_url").value = x.base_url; $("api_key").value = x.api_key || ""; $("model").value = x.model || "";
+  store.set("profile", i); updateHints(); refreshModels(x.model);
+}
+$("profiles").onchange = applyProfile;
+$("saveProfile").onclick = () => {
+  const p = getProfiles(), cur = $("profiles").value;
+  const def = cur !== "" ? p[+cur].name : (provider() === "ollama" ? "Ollama " : "") + $("base_url").value.replace(/^https?:\/\//, "");
+  const name = prompt("Nome della configurazione:", def);
+  if (!name) return;
+  const entry = { name, provider: provider(), base_url: $("base_url").value.trim(), api_key: $("api_key").value, model: $("model").value.trim() };
+  const idx = p.findIndex(x => x.name === name);
+  if (idx >= 0) p[idx] = entry; else p.push(entry);
+  putProfiles(p); const sel = String(idx >= 0 ? idx : p.length - 1);
+  store.set("profile", sel); renderProfiles(sel);
+};
+$("delProfile").onclick = () => {
+  const i = $("profiles").value; if (i === "") return;
+  const p = getProfiles(); if (!confirm(`Eliminare la configurazione "${p[+i].name}"?`)) return;
+  p.splice(+i, 1); putProfiles(p); store.set("profile", ""); renderProfiles("");
+};
+
+/* ---------- traduzione ---------- */
+function saveForm() {
+  PERSIST.forEach(k => store.set(k, $(k).value));
+  store.set("provider", provider()); store.set("no_think", $("no_think").checked ? "1" : "0");
+}
+function show(which, title, sub) {
+  for (const id of ["idle", "running", "done", "failed"]) $(id).hidden = id !== which;
+  $("workTitle").textContent = title; $("workSub").textContent = sub || "";
+}
+function stage(n) {
+  document.querySelectorAll("#stages li").forEach(li => {
+    const s = +li.dataset.s; li.className = s < n ? "done" : s === n ? "now" : "";
+    li.querySelector("i").textContent = s < n ? "✓" : s + 1;
+  });
+}
+async function start() {
+  const tgt = target();
+  if (!tgt) { $("target_custom").hidden = false; $("target_custom").focus(); return; }
+  saveForm();
+  const fd = new FormData();
+  fd.append("file", file); fd.append("target_lang", tgt); fd.append("source_lang", $("source_lang").value);
+  fd.append("provider", provider()); fd.append("base_url", $("base_url").value.trim());
+  fd.append("model", $("model").value.trim()); fd.append("api_key", $("api_key").value);
+  fd.append("output_format", outFormat()); fd.append("glossary", $("glossary").value);
+  fd.append("temperature", $("temperature").value); fd.append("max_chars", $("max_chars").value);
+  fd.append("concurrency", $("concurrency").value);
+  fd.append("num_ctx", $("num_ctx").value || "0"); fd.append("no_think", $("no_think").checked ? "true" : "false");
+
+  const src = $("source_lang").value === "auto" ? "Auto" : $("source_lang").value;
+  current = { name: file.name, langs: `${src} → ${tgt}`, time: new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}), status: "run" };
+  busy = true; goState();
+  show("running", "Traduzione in corso", `${file.name}, ${current.langs}`);
+  stage(0); lastSeq = 0; $("feed").innerHTML = ""; $("feedSec").hidden = true; $("phase").hidden = true;
+  $("pct").textContent = "0%"; $("mSent").style.width = "0"; $("mDone").style.width = "0"; $("facts").textContent = "Caricamento del documento"; $("clock").textContent = "0:00";
+  if (innerWidth <= 960) $("work").scrollIntoView({ behavior: "smooth" });
+  try {
+    const r = await fetch("/api/translate", { method: "POST", body: fd });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || r.statusText);
+    jobId = j.job_id; current.id = jobId; poll = setInterval(check, 1000); check();
+  } catch (e) { fail(e.message); }
+}
+async function check() {
+  let j;
+  try { j = await fetch(`/api/jobs/${jobId}`).then(r => r.json()); } catch { return; }
+  if (j.status === "running") {
+    const pct = j.chars_total ? Math.min(99, Math.round(100 * j.chars_out / j.chars_total)) : 0;
+    const sent = j.total ? Math.min(100, Math.round(100 * (j.done + 1) / j.total)) : 0;
+    stage(j.phase === "ricostruzione documento" ? 2 : (j.phase === "conversione del PDF in Word" || !j.total) ? 0 : 1);
+    $("pct").textContent = pct + "%"; $("mDone").style.width = pct + "%"; $("mSent").style.width = Math.max(sent, pct) + "%";
+    $("meter").setAttribute("aria-valuenow", pct);
+    $("clock").textContent = mmss(j.elapsed);
+    $("facts").textContent = j.total ? `Blocco ${Math.min(j.done + 1, j.total)} di ${j.total}, ${j.chars_out.toLocaleString("it")} caratteri`
+      : j.phase === "conversione del PDF in Word" ? "Conversione del PDF in Word" : "Preparazione";
+    let msg = "", warn = false;
+    if (j.phase === "in attesa del modello" && j.idle >= 8) { msg = `In attesa della risposta del modello da ${mmss(j.idle)}: caricamento in memoria o elaborazione del testo.`; warn = j.idle >= 60; }
+    else if (j.phase === "ragionamento") { msg = `Il modello sta ragionando prima di tradurre. Per evitarlo attiva "Disattiva il ragionamento" nelle impostazioni del modello.`; warn = true; }
+    else if (j.phase === "ricostruzione documento") msg = "Ricomposizione del documento con la formattazione originale.";
+    if (j.retries) msg += ` ${j.retries} paragrafi ritradotti per completare la traduzione o preservare la formattazione.`;
+    $("phase").hidden = !msg.trim(); $("phaseText").textContent = msg.trim(); $("phase").className = "notice " + (warn ? "warn" : "info");
+    $("meter").classList.toggle("idle", j.phase === "in attesa del modello" || j.phase === "ragionamento");
+    feed(j.recent || []);
+  } else if (j.status === "done") { clearInterval(poll); finish(j); }
+  else fail(j.error);
+}
+function feed(items) {
+  for (const it of items) {
+    if (it.n <= lastSeq) continue;
+    lastSeq = it.n; $("feedSec").hidden = false;
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="o">${esc(it.o)}</div><div class="t">${esc(it.t)}</div>`;
+    $("feed").prepend(li);
+    while ($("feed").children.length > 5) $("feed").lastChild.remove();
+  }
+}
+function finish(j) {
+  busy = false; goState();
+  show("done", "Traduzione completata", current ? current.langs : "");
+  const e = j.output_name.split(".").pop().toUpperCase();
+  $("outExt").textContent = e; $("outName").textContent = j.output_name;
+  $("doneSub").textContent = `Completata in ${mmss(j.elapsed)}, ${j.segments} paragrafi`;
+  $("dl").href = `/api/jobs/${jobId}/download`;
+  $("doneWarn").hidden = !j.untranslated;
+  $("doneWarnText").textContent = j.untranslated
+    ? `${j.untranslated} ${j.untranslated === 1 ? "paragrafo potrebbe essere rimasto" : "paragrafi potrebbero essere rimasti"} nella lingua originale anche dopo tre tentativi. Spesso si tratta di nomi, sigle o codici; altrimenti prova un modello più grande o riduci i caratteri per richiesta.` : "";
+  pages = j.pages || 0; page = 0; $("compare").hidden = !pages;
+  if (pages) loadPage();
+  addHistory({ ...current, status: "ok", out: j.output_name, url: `/api/jobs/${jobId}/download` });
+}
+function fail(msg) {
+  clearInterval(poll); busy = false; goState();
+  show("failed", "Traduzione interrotta", current ? current.name : "");
+  $("errText").textContent = msg || "Errore sconosciuto.";
+  if (current) addHistory({ ...current, status: "err", error: msg });
+}
+$("cancel").onclick = async () => { if (jobId) await fetch(`/api/jobs/${jobId}`, { method: "DELETE" }); };
+$("again").onclick = () => { show("idle", "Area di lavoro"); $("drop").focus(); };
+$("retry").onclick = () => show("idle", "Area di lavoro");
+
+/* ---------- cronologia della sessione ---------- */
+function addHistory(h) { const list = session.get(); list.unshift(h); session.set(list.slice(0, 20)); renderHistory(); }
+function renderHistory() {
+  const list = session.get();
+  $("historyCard").hidden = !list.length;
+  $("historyBody").innerHTML = list.map(h => `<tr>
+    <td class="file" title="${esc(h.name)}">${esc(h.name)}</td>
+    <td>${esc(h.langs)}</td>
+    <td class="when">${esc(h.time)}</td>
+    <td>${h.status === "ok" ? '<span class="badge ok">Completata</span>' : '<span class="badge err">Non riuscita</span>'}</td>
+    <td class="act">${h.status === "ok" ? `<a href="${h.url}">Scarica</a>` : ""}</td></tr>`).join("");
+}
+
+/* ---------- anteprima ---------- */
+function loadPage() {
+  const w = Math.min(1400, Math.round(700 * (window.devicePixelRatio || 1)));
+  const o = `/api/jobs/${jobId}/preview/orig/${page}?width=${w}`, t = `/api/jobs/${jobId}/preview/tr/${page}?width=${w}`;
+  $("sbsOrig").src = o; $("sbsTr").src = t; $("imgOrig").src = o; $("imgTr").src = t;
+  $("pageNo").textContent = `${page + 1} / ${pages}`;
+  $("prev").disabled = page === 0; $("next").disabled = page >= pages - 1;
+}
+$("prev").onclick = () => { if (page > 0) { page--; loadPage(); } };
+$("next").onclick = () => { if (page < pages - 1) { page++; loadPage(); } };
+function viewMode(m) {
+  $("sbs").hidden = m !== "sbs"; $("wipe").hidden = m !== "wipe";
+  $("modeSbs").setAttribute("aria-pressed", m === "sbs"); $("modeWipe").setAttribute("aria-pressed", m === "wipe");
+  store.set("view", m);
+}
+$("modeSbs").onclick = () => viewMode("sbs"); $("modeWipe").onclick = () => viewMode("wipe");
+(() => {
+  const w = $("wipe"); let drag = false;
+  const set = x => { const r = w.getBoundingClientRect(); w.style.setProperty("--cut", Math.max(0, Math.min(100, (x - r.left) / r.width * 100)) + "%"); };
+  w.addEventListener("pointerdown", e => { drag = true; w.setPointerCapture(e.pointerId); set(e.clientX); });
+  w.addEventListener("pointermove", e => { if (drag) set(e.clientX); });
+  w.addEventListener("pointerup", () => drag = false);
+  w.tabIndex = 0;
+  w.addEventListener("keydown", e => {
+    const cur = parseFloat(getComputedStyle(w).getPropertyValue("--cut")) || 50;
+    if (e.key === "ArrowLeft") w.style.setProperty("--cut", Math.max(0, cur - 5) + "%");
+    if (e.key === "ArrowRight") w.style.setProperty("--cut", Math.min(100, cur + 5) + "%");
+  });
+})();
+
+/* ---------- avvio ---------- */
+async function init() {
+  fillLangs(); renderFormats(); renderHistory(); viewMode(store.get("view") || "sbs");
+  const cfg = await fetch("/api/config").then(r => r.json());
+  const prov = store.get("provider") || cfg.provider;
+  document.querySelector(`input[name=provider][value=${prov}]`).checked = true;
+  $("base_url").value = cfg.base_url; $("model").value = cfg.model;
+  $("max_chars").value = cfg.max_chars; $("concurrency").value = cfg.concurrency;
+  $("num_ctx").value = cfg.num_ctx; $("no_think").checked = cfg.no_think;
+  if (store.get("no_think") !== null) $("no_think").checked = store.get("no_think") === "1";
+  if (cfg.has_api_key) $("api_key").placeholder = "Configurata sul server, lascia vuoto";
+  for (const k of PERSIST) { const v = store.get(k); if (v !== null && $(k)) $(k).value = v; }
+  if (!$("source_lang").value) $("source_lang").value = "Italiano";
+  if (!$("target_lang").value) $("target_lang").value = "English";
+  langUi(); updateHints(); updatePill();
+  const prof = store.get("profile") || "";
+  renderProfiles(getProfiles()[+prof] ? prof : "");
+  if ($("profiles").value !== "") applyProfile(); else if ($("base_url").value) refreshModels();
+  goState();
+}
+["source_lang", "target_lang"].forEach(id => $(id).addEventListener("change", () => { langUi(); saveForm(); }));
+$("target_custom").addEventListener("input", saveForm);
+$("glossary").addEventListener("input", saveForm);
+init();
+</script>
+</body>
+</html>
